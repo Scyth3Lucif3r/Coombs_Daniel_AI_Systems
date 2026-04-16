@@ -89,7 +89,6 @@ public class StateMachineSimple : MonoBehaviour
 
     public void RunAway()
     {
-        Debug.Log("So Scawy");
         scared = true;
 
         state = State.Flee;
@@ -219,12 +218,17 @@ public class StateMachineSimple : MonoBehaviour
 
     void Flee()
     {
+        //makes the spider run back to their spawn position through the 
+        //waypoint they start on.
         Vector3 location = farAway.position;
         agent.SetDestination(location);
         Debug.Log(Vector3.Distance(transform.position, location));
         if (Vector3.Distance(transform.position, location) < fleeThreshold)
         {
             
+            //we turn soundHeard off here too to avoid the spider getting 
+            //caught in a loop of trying to go to the sound, only to keep
+            //running into a safe zone.
             scared = false;
             soundHeard = false;
             state = State.Idle;

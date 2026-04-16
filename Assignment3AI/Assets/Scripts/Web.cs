@@ -26,6 +26,7 @@ public class Web : SoundObject
         other.GetComponent<Character>();
         if (character != null)
         {
+            //characters speed should be slowed when walking through webs.
             character.moveSpeed = 4;
         }
 
