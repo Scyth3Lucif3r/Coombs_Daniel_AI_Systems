@@ -4,24 +4,30 @@ using Unity.Collections;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.AI;
+using UnityEngine.SceneManagement;
 
 public class StateMachineSimple : MonoBehaviour
 {
-    public enum State { Idle, Patrol, Search, Chase, Investigate };
+    public enum State { Idle, Patrol, Search, Chase, Investigate, Flee };
 
     [Header("Scene References")]
     public GameObject character;
     public Transform[] waypoints;
+    public Transform farAway;
 
     [Header ("Config Values")]
     public float idleThreshold = 1.0f;
     public float waypointThreshold = 1.5f;
     public float searchThreshold = 5.0f;
     public float investigateThreshold = 5.0f;
+    public float fleeThreshold = 1.5f;
     public float viewRadius = 10f;
     public float viewAngle = 60f;
     public float investigateDistance = 1.5f;
-    
+
+
+    public LayerMask soundLayer;
+    public LayerMask lightLayer;
 
     float idleTime = 0.0f;
     float searchTime = 0f;
@@ -37,6 +43,7 @@ public class StateMachineSimple : MonoBehaviour
     bool canSeePlayer = false;
 
     bool soundHeard = false;
+    bool scared = false;
     Vector3 soundLocation = Vector3.zero;
 
     private void Awake()
@@ -66,6 +73,10 @@ public class StateMachineSimple : MonoBehaviour
             case State.Investigate:
                 Investigate();
                 break;
+            case State.Flee:
+                Flee();
+                break;
+
 
         }
     }
@@ -74,6 +85,14 @@ public class StateMachineSimple : MonoBehaviour
     {
         soundHeard = true;
         soundLocation = soundObject.transform.position;
+    }
+
+    public void RunAway()
+    {
+        Debug.Log("So Scawy");
+        scared = true;
+
+        state = State.Flee;
     }
 
     void Idle()
@@ -92,6 +111,7 @@ public class StateMachineSimple : MonoBehaviour
         state = State.Patrol;
         waypointIndex++;
         if (waypointIndex >= waypoints.Length) waypointIndex = 0;
+        agent.speed = 15f;
     }
 
     void Patrol()
@@ -99,6 +119,7 @@ public class StateMachineSimple : MonoBehaviour
         Vector3 waypoint = waypoints[waypointIndex].position;
         
         agent.SetDestination(waypoint);
+        
 
         viewEnabled = true;
         canSeePlayer = InViewCone();
@@ -124,6 +145,7 @@ public class StateMachineSimple : MonoBehaviour
     void Chase()
     {
         agent.SetDestination(character.transform.position);
+        agent.speed = 25f;
 
         canSeePlayer = InViewCone();
         if (!canSeePlayer)
@@ -137,7 +159,7 @@ public class StateMachineSimple : MonoBehaviour
 
     void Search()
     {
-        agent.SetDestination(transform.position + transform.forward + transform.right);
+        agent.SetDestination(transform.position + transform.forward/2 + transform.right/2);
 
         float elapsedSearchTime = Time.time - searchTime;
         if (elapsedSearchTime > searchThreshold)
@@ -161,6 +183,7 @@ public class StateMachineSimple : MonoBehaviour
     {
         state = State.Investigate;
         investigateTime = Time.time;
+        agent.speed = 10f;
     }
 
     void Investigate()
@@ -194,6 +217,21 @@ public class StateMachineSimple : MonoBehaviour
         }
     }
 
+    void Flee()
+    {
+        Vector3 location = farAway.position;
+        agent.SetDestination(location);
+        Debug.Log(Vector3.Distance(transform.position, location));
+        if (Vector3.Distance(transform.position, location) < fleeThreshold)
+        {
+            
+            scared = false;
+            soundHeard = false;
+            state = State.Idle;
+        }
+        
+    }
+
 
     bool InViewCone()
     {
@@ -204,12 +242,24 @@ public class StateMachineSimple : MonoBehaviour
         if (Vector3.Angle(transform.forward, npcToCharacter) > 0.5f * viewAngle) return false;
 
         Vector3 toCharacterDir = npcToCharacter.normalized;
-        if (Physics.Raycast(transform.position, toCharacterDir, out RaycastHit ray, viewRadius))
+        if (Physics.Raycast(transform.position, toCharacterDir, out RaycastHit ray, viewRadius, ~soundLayer | ~lightLayer))
         {
             return ray.transform == character.transform;
         }
 
         return false;
+    }
+
+    private void OnTriggerEnter(Collider other)
+    {
+        
+        Character character = other.GetComponent<Character>();
+        if (character != null)
+        {
+            SceneManager.LoadScene("Caught");
+        }
+        
+        
     }
 
     private void OnDrawGizmos()

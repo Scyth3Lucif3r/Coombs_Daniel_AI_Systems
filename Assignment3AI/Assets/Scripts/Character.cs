@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.EventSystems;
 using UnityEngine.InputSystem;
 
 public class Character : MonoBehaviour
@@ -22,6 +23,7 @@ public class Character : MonoBehaviour
     {
         PlayerMotion();
     }
+
     void PlayerMotion()
     {
         if (controller.isGrounded && velocity.y < 0)

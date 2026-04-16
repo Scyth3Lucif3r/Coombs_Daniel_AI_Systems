@@ -9,16 +9,25 @@ public class Web : SoundObject
 
     MeshRenderer meshRenderer;
 
+    Character character;
+
     public override void Awake()
     {
         base.Awake();
 
+        character = GetComponent<Character>();
         meshRenderer = GetComponent<MeshRenderer>();
     }
 
     public override void OnTriggerEnter(Collider other)
     {
         base.OnTriggerEnter(other);
+
+        other.GetComponent<Character>();
+        if (character != null)
+        {
+            character.moveSpeed = 4;
+        }
 
         meshRenderer.material = WebMaterialSprung;
     }
